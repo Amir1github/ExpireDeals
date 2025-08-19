@@ -10,6 +10,8 @@ interface AuthContextType {
   profile: Profile | null
   loading: boolean
   signInWithGoogle: () => Promise<void>
+  signInWithEmail: (email: string) => Promise<void>
+  signUpWithEmail: (email: string) => Promise<void>
   signOut: () => Promise<void>
   createProfile: (userType: 'buyer' | 'seller') => Promise<Profile | undefined>
 }

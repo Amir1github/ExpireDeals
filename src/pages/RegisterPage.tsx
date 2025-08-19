@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
-import { Navigate, Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuthContext } from '../contexts/AuthContext'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, Store, User as UserIcon } from 'lucide-react'
 
-export function AuthPage() {
-  const { user, signInWithGoogle, signInWithEmail } = useAuthContext()
+export function RegisterPage() {
+  const { user, signUpWithEmail, signInWithGoogle } = useAuthContext()
   const [email, setEmail] = useState('')
+  const [selectedType, setSelectedType] = useState<'buyer' | 'seller' | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -13,24 +14,35 @@ export function AuthPage() {
     return <Navigate to="/" replace />
   }
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignUp = async () => {
+    if (!selectedType) {
+      setStatus('Выберите тип пользователя')
+      return
+    }
+    localStorage.setItem('pending_user_type', selectedType)
     try {
       await signInWithGoogle()
     } catch (error) {
-      console.error('Error signing in:', error)
+      console.error('Error with Google signup:', error)
     }
   }
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setStatus(null)
+    if (!selectedType) {
+      setStatus('Выберите тип пользователя')
+      return
+    }
+    localStorage.setItem('pending_user_type', selectedType)
     setSubmitting(true)
     try {
-      await signInWithEmail(email)
-      setStatus('Мы отправили письмо со ссылкой для входа. Проверьте почту.')
+      await signUpWithEmail(email)
+      setStatus('Мы отправили письмо для подтверждения. Проверьте почту.')
     } catch (error) {
-      console.error('Email sign-in error:', error)
+      console.error('Email sign-up error:', error)
       setStatus('Не удалось отправить письмо. Попробуйте ещё раз.')
+      localStorage.removeItem('pending_user_type')
     } finally {
       setSubmitting(false)
     }
@@ -42,16 +54,35 @@ export function AuthPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <ShoppingBag className="text-green-600 mr-2" size={40} />
-            <h1 className="text-2xl font-bold text-gray-800">ExpireDeals</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Регистрация</h1>
           </div>
-          <p className="text-gray-600">
-            Находите выгодные распродажи продуктов с истекающим сроком годности
-          </p>
+          <p className="text-gray-600">Выберите тип и зарегистрируйтесь</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <button
+            type="button"
+            onClick={() => setSelectedType('buyer')}
+            className={`border rounded-xl p-4 text-center transition ${selectedType === 'buyer' ? 'border-green-600 ring-2 ring-green-200' : 'border-gray-200 hover:border-gray-300'}`}
+          >
+            <UserIcon className="mx-auto mb-2 text-green-600" />
+            <div className="font-medium">Покупатель</div>
+            <div className="text-xs text-gray-500">Ищу скидки</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedType('seller')}
+            className={`border rounded-xl p-4 text-center transition ${selectedType === 'seller' ? 'border-green-600 ring-2 ring-green-200' : 'border-gray-200 hover:border-gray-300'}`}
+          >
+            <Store className="mx-auto mb-2 text-orange-500" />
+            <div className="font-medium">Продавец</div>
+            <div className="text-xs text-gray-500">Публикую распродажи</div>
+          </button>
         </div>
 
         <div className="space-y-4">
           <button
-            onClick={handleGoogleSignIn}
+            onClick={handleGoogleSignUp}
             className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
@@ -60,7 +91,7 @@ export function AuthPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            Войти через Google
+            Зарегистрироваться через Google
           </button>
 
           <div className="relative">
@@ -72,7 +103,7 @@ export function AuthPage() {
             </div>
           </div>
 
-          <form onSubmit={handleEmailSignIn} className="space-y-3">
+          <form onSubmit={handleEmailSignUp} className="space-y-3">
             <input
               type="email"
               required
@@ -86,14 +117,15 @@ export function AuthPage() {
               disabled={submitting}
               className="w-full px-4 py-3 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-70"
             >
-              {submitting ? 'Отправка...' : 'Войти по почте'}
+              {submitting ? 'Отправка...' : 'Зарегистрироваться по почте'}
             </button>
             {status && (
               <p className="text-sm text-gray-600 text-center">{status}</p>
             )}
           </form>
+
           <div className="text-sm text-center text-gray-600">
-            Нет аккаунта? <Link to="/register" className="text-green-600 hover:underline">Зарегистрироваться</Link>
+            Уже есть аккаунт? <Link to="/auth" className="text-green-600 hover:underline">Войти</Link>
           </div>
         </div>
 
@@ -104,3 +136,5 @@ export function AuthPage() {
     </div>
   )
 }
+
+

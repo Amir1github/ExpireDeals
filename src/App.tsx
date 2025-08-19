@@ -6,6 +6,7 @@ import { Layout } from './components/Layout'
 
 // Pages
 import { AuthPage } from './pages/AuthPage'
+import { RegisterPage } from './pages/RegisterPage'
 import { SetupProfilePage } from './pages/SetupProfilePage'
 import { HomePage } from './pages/HomePage'
 import { MapPage } from './pages/MapPage'
@@ -19,6 +20,7 @@ function App() {
         <Routes>
           {/* Auth routes */}
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route 
             path="/setup-profile" 
             element={

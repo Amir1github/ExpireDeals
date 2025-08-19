@@ -50,6 +50,34 @@ export function useAuth() {
       }
 
       setProfile(data)
+
+      // Автосоздание профиля после регистрации, если выбран тип пользователя на экране регистрации
+      if (!data) {
+        const pendingUserType = localStorage.getItem('pending_user_type') as 'buyer' | 'seller' | null
+        if (pendingUserType) {
+          try {
+            const { data: authData } = await supabase.auth.getUser()
+            const currentUser = authData?.user
+            if (currentUser) {
+              const { data: newProfile, error: insertError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: currentUser.id,
+                  email: currentUser.email!,
+                  full_name: currentUser.user_metadata?.full_name || null,
+                  avatar_url: currentUser.user_metadata?.avatar_url || null,
+                  user_type: pendingUserType
+                })
+                .select()
+                .single()
+              if (insertError) throw insertError
+              setProfile(newProfile)
+            }
+          } finally {
+            localStorage.removeItem('pending_user_type')
+          }
+        }
+      }
     } catch (error) {
       console.error('Error fetching profile:', error)
     } finally {
@@ -70,6 +98,28 @@ export function useAuth() {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
+    if (error) throw error
+  }
+
+  const signInWithEmail = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: `${window.location.origin}`
+      }
+    })
+    if (error) throw error
+  }
+
+  const signUpWithEmail = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}`
+      }
+    })
     if (error) throw error
   }
 
@@ -99,6 +149,8 @@ export function useAuth() {
     profile,
     loading,
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
     signOut,
     createProfile
   }

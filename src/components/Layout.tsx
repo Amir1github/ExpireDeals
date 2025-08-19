@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-// import { useAuthContext } from '../contexts/AuthContext'
+import { useAuthContext } from '../contexts/AuthContext'
 import { 
   Home, 
   Map, 
@@ -18,14 +18,32 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  // const { user, profile, signOut } = useAuthContext()
+  const { signOut } = useAuthContext()
   const location = useLocation()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleSignOut = async () => {
-    // await signOut()
-    navigate('/auth')
+    try {
+      await signOut()
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
+
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i)
+        if (!key) continue
+        if (key.startsWith('sb-') || key === 'pending_user_type') {
+          localStorage.removeItem(key)
+        }
+      }
+    } catch (error) {
+      console.error('LocalStorage cleanup error:', error)
+    }
+
+    setSidebarOpen(false)
+    navigate('/auth', { replace: true })
   }
 
   // Мокаем данные пользователя для тестирования
